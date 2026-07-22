@@ -179,3 +179,59 @@ LLM 返回后,提取 JSON 数组,展示给用户。建议展示格式:
 3. 抽 `title-corpus.jsonl` 中抖音最近 5 条
 4. 拼 prompt,基于自己的 LLM 生成
 5. 返回 6 个候选 + 套路标注
+
+---
+
+## 数据源与自动同步(2026-07-22 起)
+
+### 9 个数据源(每日 cron 自动采集)
+
+| 平台 | 抓取方式 | 平台字段 | 典型入库/天 |
+|---|---|---|---|
+| 微博热搜 | weibo.com/ajax/side/hotSearch | `weibo` | 25-30 条 |
+| 知乎热榜 | zhihu.com/api/v3/feed/topstory/hot-lists/total | `zhihu` | 15-20 条 |
+| 抖音热门 | douyin.com/aweme/v1/web/hot/search/list/ | `douyin` | 20-25 条 |
+| 头条热榜 | toutiao.com/hot-event/hot-board/ | `toutiao` | 25-30 条 |
+| B 站热门 | api.bilibili.com/x/web-interface/ranking/v2 | `bilibili` | 10-15 条 |
+| **微信公众号** | **搜狗微信搜索 `weixin.sogou.com/weixin?query=`** | **`wechat-mp`** | **30+ 条** |
+| **小红书** | **web_search 兜底(`小红书 [关键词] 爆文`)** | **`xiaohongshu`** | **20+ 条** |
+| 少数派(sspai) | sspai.com 首页 | `sspai` | 10-15 条 |
+| 华尔街见闻 | wallstreetcn.com 热门 | `wallstcn` | 8-12 条 |
+| 36kr | 36kr.com/hot-list/catalog | `36kr` | 10-15 条 |
+
+**目标每日入库 ≥ 200 条**(早 cron `daily-hot-titles` 09:00 跑)。
+
+### 平台风格差异化(关键 for 生成)
+
+| 平台 | 字数 | emoji | 数字 | 反差 | 句式 | 钩子偏好 |
+|---|---|---|---|---|---|---|
+| **公众号** | 18-25 | 少 | 必有(数据) | 反差/揭秘 | 长句、信息量大 | 痛点共鸣 + 观点 + 数据 |
+| **小红书** | 8-20 | **超多**(必备)| 必有 | 反差强烈 | 短句、口语化 | 攻略/种草/避坑/清单 |
+| 抖音 | 12-18 | 中 | 偶有 | 悬念 | 自我代入式 | 第一人称当下时 |
+| 微博 | 5-15 | 中 | 偶有 | 反转 | 短爆点 | 情绪 + 反差 |
+| 头条 | 15-30 | 少 | 必有 | 客观 | 客观描述 | 数字 + 官方 label |
+| 知乎 | 20-40 | 少 | 中 | 深度 | 问号结尾 | "如何看待""为什么" 框架 |
+
+**生成标题时**,platform 字段必须精确匹配(`公众号` → `wechat-mp` 风格,`小红书` → `xiaohongshu` 风格)。
+
+### 数据流(cron 自动化)
+
+```
+每日 09:00   cron `daily-hot-titles` 跑 → 写 ~/.hermes/data/title-corpus.jsonl
+每日 21:00   cron `daily-skill-synthesis` 跑 → 写 ~/.hermes/data/title-trends-rolling.md
+每日每小时    cron `titles-auto-sync`(no_agent 脚本) → 检测 + 复制 + git commit + git push
+```
+
+**watcher 脚本**:`~/.hermes/scripts/titles-auto-sync.py`:
+- **触发**: cron `titles-auto-sync`(每 17 分整点跑,no_agent 模式免 LLM 调用)
+- **逻辑**: 检测 `~/.hermes/data/` 是否有比 `~/Desktop/titles/data/title-corpus.jsonl` 更新的文件,有就 sync + commit + push,3 次重试
+- **同步范围**:
+  - `title-corpus.jsonl` / `title-trends-rolling.md` → `titles/data/`
+  - `daily-*.md` → `titles/references/daily/`
+- **不弹窗**: `GIT_TERMINAL_PROMPT=0` + `~/.gitconfig` `[credential "https://github.com"] helper = store` 跳过 GCM
+
+**手动同步**(其他文件如 SKILL.md):直接 `cd ~/Desktop/titles && git add -A && git commit -m "..." && git push`
+
+### 双周复盘(cron `weekly-title-trend-analysis`)
+
+周日 22:00 跑,产出周报 + 趋势升级建议 → 写到 `references/weekly-trend-{date}.md`。
