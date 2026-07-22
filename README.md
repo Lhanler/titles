@@ -7,9 +7,8 @@
 一个 OpenClaw skill,提供:
 - **16 式爆款套路库**(反常识、悬念、数字、对比、情感等)
 - **平台速查**(公众号 / 小红书 / 抖音 / 新闻)
-- **520+ 条真实爆款语料**(`data/title-corpus.jsonl`,每日自动更新)
+- **真实爆款标题持续更新**(`data/title-corpus.jsonl`)
 - **趋势洞察**(`data/title-trends-rolling.md`)
-- **可选 MCP server 形态**(装 `mcp-server/`)
 
 ## 🚀 怎么用
 
@@ -120,10 +119,6 @@ bash update-viral-titles.sh
 - 触发器:每天 10:30 / 22:30
 - 操作:启动程序 `%USERPROFILE%\.qclaw\skills\viral-titles\update-viral-titles.bat`
 
-建议更新时间:
-- **10:30**:拉取早上 09:00 收集的新数据
-- **22:30**:拉取晚上 21:00 提炼的趋势
-
 ### 方式 4:Skill 加载时自动检查
 
 `SKILL.md` 末尾的"自动版本检查"章节会让 LLM 在每次加载 skill 时:
@@ -161,11 +156,6 @@ titles/
     ├── mcp_config_examples/
     └── tests/
 ```
-
-## 🤝 关联仓库
-
-- **[axkit](https://github.com/Lhanler/axkit)**:中央 skills 仓库,装多个 skill 用
-- **[titles](https://github.com/Lhanler/titles)**(本仓库):本 skill 的单仓版本,直接装
 
 ## 📄 License
 
