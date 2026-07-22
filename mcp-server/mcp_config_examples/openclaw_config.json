@@ -1,0 +1,11 @@
+{
+  "plugins": {
+    "entries": {
+      "viral-titles-mcp": {
+        "enabled": true,
+        "command": "python",
+        "args": ["-m", "viral_titles_mcp"]
+      }
+    }
+  }
+}

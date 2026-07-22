@@ -1,0 +1,7 @@
+# Force case-insensitive files to stay as one canonical name
+# 在 Windows 上 SKILL.md 和 skill.md 是同一个文件
+# 我们选小写 skill.md(链接导入客户端期望)
+# 这个属性帮助在 Linux/Mac 上保持一致(如果用户用 case-sensitive 系统)
+
+# viral-titles 仓库主入口(小写,链接导入兼容)
+skill.md linguist-documentation=true
