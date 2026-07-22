@@ -235,3 +235,74 @@ LLM 返回后,提取 JSON 数组,展示给用户。建议展示格式:
 ### 双周复盘(cron `weekly-title-trend-analysis`)
 
 周日 22:00 跑,产出周报 + 趋势升级建议 → 写到 `references/weekly-trend-{date}.md`。
+
+---
+
+## 自动版本检查(skill 加载时 LLM 必读)
+
+**目的**:让已安装用户的 skill 自动感知有新数据,提醒更新。
+
+### 加载时检测流程(LLM 必执行)
+
+**每次加载 skill 时,执行以下 3 步**:
+
+#### 步骤 1:读本地版本
+
+```python
+local_sha = read_file("data/_version").strip().split("\n")[-1]  # 取最后一行(SHA 在末尾)
+```
+
+#### 步骤 2:查 GitHub 最新 commit
+
+```python
+import urllib.request, json
+resp = urllib.request.urlopen(
+    "https://api.github.com/repos/Lhanler/titles/commits/main",
+    timeout=10
+)
+latest_sha = json.loads(resp.read())["sha"]
+```
+
+(限流 ~60 次/小时,但对个人客户端足够)
+
+#### 步骤 3:对比 + 提示
+
+- **`local_sha == latest_sha`** → 已是最新,无操作
+- **`local_sha != latest_sha`** → 提示用户:
+
+```
+📦 检测到 viral-titles 数据有更新
+   本地:    {local_sha[:7]}
+   最新:    {latest_sha[:7]}
+
+推荐运行一键更新:
+   bash update-viral-titles.sh        # Linux/macOS/Git Bash
+   update-viral-titles.bat           # Windows
+
+或手动:
+   cd ~/.qclaw/skills/viral-titles && git pull origin main
+```
+
+### 用户更新数据的方式(详见 README.md)
+
+| 方式 | 适用场景 | 频次 |
+|---|---|---|
+| 手动 `git pull` | 临时想看新数据 | 用户主动 |
+| `update-viral-titles.sh` / `.bat` 一键脚本 | 一行命令搞定 | 用户主动 |
+| **crontab / Windows 任务计划** 自动跑脚本 | 自动化,**最推荐** | 每天 10:30 + 22:30 |
+| **Skill 加载时 LLM 检查**(本章节) | 无操作提醒 | 每次加载 |
+
+### 关键:安装时必须完整 git clone
+
+> **不要** 下载 zip 后 `cp -r` —— 这会丢 git 历史,后续无法 `git pull` 更新。
+
+正确安装:
+```bash
+git clone https://github.com/Lhanler/titles.git ~/.qclaw/skills/viral-titles
+```
+
+一键脚本:
+```bash
+curl -O https://raw.githubusercontent.com/Lhanler/titles/main/install-viral-titles.sh
+bash install-viral-titles.sh
+```
