@@ -238,6 +238,150 @@ LLM 返回后,提取 JSON 数组,展示给用户。建议展示格式:
 
 ---
 
+## 🚀 首次启动自动设置(LLM 加载时必读)
+
+> **目的**:用户首次调用 skill 时,自动完成两件事:
+> 1. 修复 GCM 弹窗(确保以后任何 git 操作不弹窗)
+> 2. 询问是否开启定时自动更新
+
+### 检测首次加载
+
+**每次加载 skill,先检查 marker 文件**:
+
+```bash
+# 检查 ~/.qclaw-hermes/viral-titles-init.flag(独立于 skill 目录,避免被 git pull 覆盖)
+test -f ~/.qclaw-hermes/viral-titles-init.flag && echo "已初始化" || echo "首次加载"
+```
+
+如果文件**存在** → 跳过下面所有步骤,直接进入正常工作流。
+
+如果文件**不存在** → 执行下面的初始化流程。
+
+### 初始化流程(LLM 主动执行)
+
+#### 步骤 1:询问用户 + 友好提示
+
+LLM **自动**输出:
+
+```
+🎉 检测到你是首次使用 viral-titles skill!
+
+建议完成两件事(可一键搞定):
+1. 修复 GCM 弹窗(以后所有 git push 都不弹窗)
+2. 设置定时自动更新(每天 10:30 + 22:30 自动拉新数据)
+
+可以一键完成吗?(yes/no)
+```
+
+#### 步骤 2:用户同意 → 执行安装脚本
+
+```python
+import subprocess, sys
+
+if platform == "win32":
+    # Windows
+    result = subprocess.run(
+        [r"C:\path\to\install-viral-titles.bat"],
+        shell=False, capture_output=True, text=True
+    )
+else:
+    # Linux/macOS
+    result = subprocess.run(
+        ["bash", os.path.expanduser("~/.qclaw/skills/viral-titles/install-viral-titles.sh")],
+        capture_output=True, text=True
+    )
+
+print(result.stdout)
+if result.returncode == 0:
+    print("✅ GCM 弹窗已修复 + skill 已装")
+else:
+    print(f"❌ 出错了:{result.stderr}")
+```
+
+安装脚本会:
+- 自动把 `credential.https://github.com.helper = store` 写入 `~/.gitconfig`
+- 自动把 `GIT_TERMINAL_PROMPT=0` 写入 `~/.bashrc` / PowerShell profile
+- **不弹窗**(因为已经在 script 里禁用 prompt)
+
+#### 步骤 3:设置定时自动更新
+
+**检测是否已设置**:
+
+```python
+# Windows: 看任务计划程序里有没有 viral-titles-update
+result = subprocess.run(["schtasks", "/query", "/tn", "viral-titles-update"], capture_output=True)
+windows_task_exists = result.returncode == 0
+
+# Linux: 看 crontab 里有无匹配行
+result = subprocess.run(["crontab", "-l"], capture_output=True, text=True)
+linux_cron_exists = "viral-titles" in result.stdout
+```
+
+**没设置 + 用户同意 → 立即设置**:
+
+```python
+import subprocess, platform
+
+if platform == "win32":
+    # Windows 任务计划程序(每天 10:30 + 22:30)
+    script_path = os.path.expanduser(r"~\.qclaw\skills\viral-titles\update-viral-titles.bat")
+    
+    for time in ["10:30", "22:30"]:
+        task_name = f"viral-titles-update-{time.replace(':', '')}"
+        # 删除已存在的(幂等)
+        subprocess.run(["schtasks", "/delete", "/tn", task_name, "/f"], capture_output=True)
+        # 创建
+        subprocess.run([
+            "schtasks", "/create",
+            "/tn", task_name,
+            "/tr", f'"{script_path}"',
+            "/sc", "daily",
+            "/st", time,
+        ], capture_output=True)
+        print(f"✓ 已设置 Windows 任务计划程序:每天 {time}")
+else:
+    # Linux/macOS crontab
+    existing = subprocess.run(["crontab", "-l"], capture_output=True, text=True).stdout
+    new_lines = [
+        "0 10,22 * * * cd ~/.qclaw/skills/viral-titles && git pull origin main >/tmp/viral-titles-update.log 2>&1",
+    ]
+    if "viral-titles-update" not in existing:
+        updated = existing + "\n" + "\n".join(new_lines) + "\n"
+        subprocess.run(["crontab", "-"], input=updated, text=True)
+        print("✓ 已设置 crontab:每天 10:00 + 22:00")
+```
+
+#### 步骤 4:写 marker 文件(避免重复询问)
+
+```python
+import os, datetime
+marker = os.path.expanduser("~/.qclaw-hermes/viral-titles-init.flag")
+os.makedirs(os.path.dirname(marker), exist_ok=True)
+with open(marker, "w") as f:
+    f.write(f"init_at={datetime.datetime.now().isoformat()}\n")
+    f.write(f"auto_update_enabled={'yes' if user_agreed else 'no'}\n")
+print(f"✓ 初始化 marker 已写:{marker}")
+```
+
+### 用户拒绝或已经设置过
+
+- 用户说 "no" → 写 marker 但 `auto_update_enabled=no`(以后不询问)
+- 用户已经设置过 cron / Task Scheduler → 检测到 skip 步骤 3,直接写 marker
+
+### 用户重置(可选)
+
+如果用户想重新初始化,删 marker:
+```bash
+rm ~/.qclaw-hermes/viral-titles-init.flag
+```
+下次加载 skill 会重新问。
+
+### 关键:marker 在 `~/.qclaw-hermes/` 而不在 skill 目录
+
+> 避免 `git pull` 时被覆盖(`.flag` 不在仓库内)
+
+---
+
 ## 自动版本检查(skill 加载时 LLM 必读)
 
 **目的**:让已安装用户的 skill 自动感知有新数据,提醒更新。

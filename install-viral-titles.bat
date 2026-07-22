@@ -24,14 +24,51 @@ set REPO_URL=https://github.com/Lhanler/titles.git
 echo ▶ 从 %REPO_URL% 安装 viral-titles
 echo   目标: %TARGET_DIR%
 
-REM 检查 git
-where git >nul 2>&1
-if errorlevel 1 (
-    echo ✗ 需要 git 命令(请先安装 Git for Windows)
-    exit /b 1
+REM ========== 修复 GCM 弹窗 ==========
+echo.
+echo ▶ [1/3] 修复 GCM 弹窗(写入 %%USERPROFILE%%\.gitconfig + PowerShell profile) ...
+
+REM 备份 gitconfig
+if exist "%USERPROFILE%\.gitconfig" (
+    copy /Y "%USERPROFILE%\.gitconfig" "%USERPROFILE%\.gitconfig.pre-viral-titles.bak" >nul 2>&1
 )
 
-REM 创建父目录
+REM 删旧 override
+git config --global --unset-all credential.https://github.com.helper >nul 2>&1
+git config --global --unset-all credential.https://gist.github.com.helper >nul 2>&1
+
+REM 加新 override
+git config --global --add credential.https://github.com.helper store
+git config --global --add credential.https://gist.github.com.helper store
+echo   ✓ %%USERPROFILE%%\.gitconfig: credential.https://github.com.helper = store
+
+REM 写 PowerShell profile
+set PS_PROFILE_DIR=%USERPROFILE%\Documents\WindowsPowerShell
+set PS_PROFILE=%PS_PROFILE_DIR%\Microsoft.PowerShell_profile.ps1
+if not exist "%PS_PROFILE_DIR%" mkdir "%PS_PROFILE_DIR%"
+if not exist "%PS_PROFILE%" (
+    REM 第一次,直接创建
+    (
+        echo # === viral-titles: disable GCM popup ===
+        echo $env:GIT_TERMINAL_PROMPT = '0'
+    ) > "%PS_PROFILE%"
+    echo   ✓ 创建 PowerShell profile + GIT_TERMINAL_PROMPT=0
+) else (
+    REM 已存在,追加(检查后)
+    findstr /c:"GIT_TERMINAL_PROMPT" "%PS_PROFILE%" >nul 2>&1
+    if errorlevel 1 (
+        echo.>> "%PS_PROFILE%"
+        echo # === viral-titles: disable GCM popup ===>> "%PS_PROFILE%"
+        echo $env:GIT_TERMINAL_PROMPT = '0'>> "%PS_PROFILE%"
+        echo   ✓ PowerShell profile: 追加 GIT_TERMINAL_PROMPT=0
+    ) else (
+        echo   ✓ PowerShell profile: GIT_TERMINAL_PROMPT=0 已存在
+    )
+)
+
+REM ========== 创建父目录 ==========
+echo.
+echo ▶ [2/3] 安装到 %TARGET_DIR% ...
 for %%D in ("%TARGET_DIR%") do set PARENT_DIR=%%~dpD
 if not exist "%PARENT_DIR%" mkdir "%PARENT_DIR%"
 

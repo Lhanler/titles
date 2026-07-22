@@ -27,7 +27,32 @@ if ! command -v git >/dev/null 2>&1; then
     exit 1
 fi
 
-# 创建父目录
+# ========== 修复 GCM 弹窗 ==========
+echo ""
+echo "▶ [1/3] 修复 GCM 弹窗(写入 ~/.gitconfig + ~/.bashrc) ..."
+GITCONFIG="$HOME/.gitconfig"
+BASHRC="$HOME/.bashrc"
+# 备份
+cp "$GITCONFIG" "$GITCONFIG.pre-viral-titles.bak" 2>/dev/null || true
+# 删旧 override
+git config --global --unset-all credential.https://github.com.helper 2>/dev/null || true
+git config --global --unset-all credential.https://gist.github.com.helper 2>/dev/null || true
+# 加新 override
+git config --global --add credential.https://github.com.helper store
+git config --global --add credential.https://gist.github.com.helper store
+echo "  ✓ ~/.gitconfig: [credential \"https://github.com\"] helper = store"
+# 写 bashrc
+touch "$BASHRC"
+if ! grep -q "GIT_TERMINAL_PROMPT=0" "$BASHRC" 2>/dev/null; then
+    printf "\n# === viral-titles: disable GCM popup ===\nexport GIT_TERMINAL_PROMPT=0\n" >> "$BASHRC"
+    echo "  ✓ ~/.bashrc: export GIT_TERMINAL_PROMPT=0"
+else
+    echo "  ✓ ~/.bashrc: GIT_TERMINAL_PROMPT=0 已存在"
+fi
+
+# ========== 创建父目录 ==========
+echo ""
+echo "▶ [2/3] 安装到 $TARGET_DIR ..."
 PARENT_DIR=$(dirname "$TARGET_DIR")
 mkdir -p "$PARENT_DIR"
 
