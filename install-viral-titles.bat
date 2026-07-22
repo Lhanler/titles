@@ -19,14 +19,14 @@ if "%~1"=="" (
     set TARGET_DIR=%~1
 )
 
-set REPO_URL=https://github.com/Lhanler/titles.git
+set REPO_URL=git@github.com:Lhanler/titles.git
 
-echo ▶ 从 %REPO_URL% 安装 viral-titles
+echo ▶ 从 %REPO_URL% 安装 viral-titles (SSH 走免弹窗)
 echo   目标: %TARGET_DIR%
 
-REM ========== 修复 GCM 弹窗 ==========
+REM ========== 设置 GIT_SSH_COMMAND(走显式 key) ==========
 echo.
-echo ▶ [1/3] 修复 GCM 弹窗(写入 %%USERPROFILE%%\.gitconfig + PowerShell profile) ...
+echo ▶ [1/3] 配置 SSH + 修复 GCM 弹窗 ...
 
 REM 备份 gitconfig
 if exist "%USERPROFILE%\.gitconfig" (
@@ -77,6 +77,8 @@ if exist "%TARGET_DIR%\.git" (
     echo ✓ 已存在 %TARGET_DIR%
     echo ▶ 自动 pull 最新数据 ...
     cd /d %TARGET_DIR%
+    REM 强制 SSH remote(覆盖之前可能的 HTTPS)
+    git remote set-url origin %REPO_URL%
     git pull origin main
     echo ✓ 更新完成
     exit /b 0

@@ -160,7 +160,9 @@ LLM 返回后,提取 JSON 数组,展示给用户。建议展示格式:
 
 ## 数据积累(可选,提升长期质量)
 
-如果用户在你的会话里产生了"想收藏的标题",可以 append 到 `title-corpus.jsonl`:
+更新频率:**每周一次**(周一 09:00 采集 → 21:00 提炼 → 23:00 自动 sync 到 GitHub)
+
+### 每周数据流(2026-07-22 起)
 
 ```json
 {"title": "...", "platform": "...", "heat_or_view": 0, "fetched_at": "2026-07-21T...", "source": "user-favorite"}
