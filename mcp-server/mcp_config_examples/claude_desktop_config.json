@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "viral-titles": {
-      "command": "python",
-      "args": ["-m", "viral_titles_mcp"]
-    }
-  }
-}

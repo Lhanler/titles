@@ -30,7 +30,7 @@ git clone https://github.com/Lhanler/titles.git %USERPROFILE%\.qclaw\skills\vira
 ```
 
 也可用一键安装脚本:
-
+也可以用一键安装脚本:
 ```bash
 # Linux/macOS/Git Bash
 curl -O https://raw.githubusercontent.com/Lhanler/titles/main/install-viral-titles.sh
@@ -39,20 +39,6 @@ bash install-viral-titles.sh
 # Windows
 curl -O https://raw.githubusercontent.com/Lhanler/titles/main/install-viral-titles.bat
 install-viral-titles.bat
-```
-
-### Claude Desktop / Cursor(MCP server)
-
-```bash
-# 1. 克隆
-git clone https://github.com/Lhanler/titles.git ~/titles
-
-# 2. 装 MCP server
-cd ~/titles/mcp-server
-pip install -e .  # 或 install.bat(Windows)
-
-# 3. 配 MCP client
-# 配置示例见 mcp-server/mcp_config_examples/
 ```
 
 ### 直接读文件(任何 LLM)
@@ -138,7 +124,7 @@ titles/
 ├── update-viral-titles.sh     # 一键更新(git pull)
 ├── update-viral-titles.bat    # Windows 一键更新
 ├── data/                      # 数据
-│   ├── title-corpus.jsonl     # 真实爆款语料(520+ 条)
+│   ├── title-corpus.jsonl     # 真实爆款标题持续更新
 │   ├── title-trends-rolling.md # 趋势洞察
 │   ├── _version               # 当前 commit SHA(版本检测用)
 │   ├── formulas.md            # 16 式套路库
@@ -147,14 +133,6 @@ titles/
 │   ├── formulas.md
 │   └── platform-cheatsheet.md
 │   └── daily/                 # 每日 cron 报告归档
-└── mcp-server/                # MCP server 形态(可选)
-    ├── pyproject.toml
-    ├── install.bat / .ps1
-    ├── start-mcp.bat / .ps1
-    ├── src/viral_titles_mcp/
-    ├── data/
-    ├── mcp_config_examples/
-    └── tests/
 ```
 
 ## 📄 License
