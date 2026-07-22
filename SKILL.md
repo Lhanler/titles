@@ -243,8 +243,21 @@ LLM 返回后,提取 JSON 数组,展示给用户。建议展示格式:
 ## 🚀 首次启动自动设置(LLM 加载时必读)
 
 > **目的**:用户首次调用 skill 时,自动完成两件事:
-> 1. 修复 GCM 弹窗(确保以后任何 git 操作不弹窗)
+> 1. 配 SSH 认证(完全绕开 GCM 弹窗,实现真正自动上传)
 > 2. 询问是否开启定时自动更新
+
+### 为什么用 SSH 而非 HTTPS
+
+**HTTPS + GCM 的致命问题**:
+- Git for Windows / QClaw 自带 GCM(Git Credential Manager)
+- GCM `helper-selector` 在 system 级,**任何 user 级 override 都会弹 GCM 选窗**
+- 用户端 QClaw 客户端会触发 GCM "credential helper selector" + "select an account" 弹窗
+- **结论**:HTTPS + GCM = **无法做到完全自动上传**
+
+**SSH 模式的优势**:
+- SSH key-based auth,**完全不调用 GCM / credential helper**
+- 0 弹窗、0 人工干预
+- 用 `core.sshCommand` + `~/.ssh/config` 绝对路径,**修中文用户名 bug**
 
 ### 检测首次加载
 
